@@ -348,7 +348,7 @@ function showTransformedImage() {
 ```
 {% endcode %}
 
-Output :** **
+Output :
 
 ![](../../.gitbook/assets/smartmockups_kfybx7dw.png)
 
@@ -396,7 +396,7 @@ Head over to `app/config/imagekit.js` and replace the** **`authenticationEndpoin
 ### **Upload an image**
 
 {% hint style="info" %}
-Try using `react-native v0.63.3` which is the latest version at the time of writing this article, as the previous versions have a known [issue](https://github.com/facebook/react-native/issues/29021) in uploading files. If you are using a previous version and can't upgrade, you'll have to implement a [workaround](https://github.com/facebook/react-native/issues/29021#issuecomment-678829869).
+Consider using react-native version v0.63.3 or later, as the previous versions have a known [issue](https://github.com/facebook/react-native/issues/29021) in uploading files. If you are using a previous version and can't upgrade, you'll have to implement a [workaround](https://github.com/facebook/react-native/issues/29021#issuecomment-678829869).
 {% endhint %}
 
 For this, let's create functions in `app/lib/imagekit.js` file. The `fetchSecurityCredentials` function is used to fetch security parameters (`token`, `signature`, `expire`) from the server implemented in the `server` directory.
