@@ -49,11 +49,21 @@ And now to run the app in the ios simulator (you should have Xcode installed)
 npx react-native run-ios
 ```
 
+{% hint style="warning" %}
+In newer versions of React Native, you may encounter issues when running `npx react-native run-ios`. To address this problem, follow these steps:
+1. Navigate to the `/ios` directory.
+2. Run `pod install`.
+3. Afterward, run `npx react-native run-ios`.
+{% endhint %}
+
 Or to run the app in the android simulator (you should have android studio installed)
 
 ```bash
 npx react-native run-android
 ```
+{% hint style="info" %}
+If you encounter issues with `npx react-native run-android`, please ensure that your `gradle` version is compatible with your `java` version. You can check compatibility [here](https://docs.gradle.org/current/userguide/compatibility.html).
+{% endhint %}
 
 You should see the following screen. This means the sample app has been set up correctly.
 
