@@ -51,7 +51,7 @@ npx react-native run-ios
 
 {% hint style="warning" %}
 In newer versions of React Native, you may encounter issues when running `npx react-native run-ios` due to a known issue in the React Native CLI, which you can check [here](https://github.com/facebook/react-native/issues/35917). To address this problem, follow these steps:
-1. Navigate to the `/ios` directory.
+1. Navigate to the `ios` directory.
 2. Run `pod install`.
 3. Afterward, run `npx react-native run-ios`.
 {% endhint %}
