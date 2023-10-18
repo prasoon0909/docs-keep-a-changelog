@@ -399,22 +399,40 @@ Head over to `app/config/imagekit.js` and replace the** **`authenticationEndpoin
 Try using `react-native v0.63.3` which is the latest version at the time of writing this article, as the previous versions have a known [issue](https://github.com/facebook/react-native/issues/29021) in uploading files. If you are using a previous version and can't upgrade, you'll have to implement a [workaround](https://github.com/facebook/react-native/issues/29021#issuecomment-678829869).
 {% endhint %}
 
-For this, let's create another function in `app/lib/imagekit.js` file.
+For this, let's create functions in `app/lib/imagekit.js` file. The `fetchSecurityCredentials` function is used to fetch security parameters (`token`, `signature`, `expire`) from the server implemented in the `server` directory.
 
 {% code title="app/lib/imagekit.js" %}
 ```javascript
-module.exports.uploadFile = function(file) {
-	return new Promise((resolve, reject) => {
-		imagekit.upload({
-			file,
-			fileName: file.name, //you can change this and generate your own name if required
-			tags: ["sample-tag-1", "sample-tag-2"] //change this or remove it if you want
-		}, function(err, result) {
-			if(err) reject(err);
-			resolve(result);
-		})
-	})
+async function fetchSecurityCredentails() {
+  try {
+    const response = await fetch(imagekitConfigOptions.authenticationEndpoint);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Request failed with status ${response.status}: ${errorText}`,
+      );
+    }
+
+    const data = await response.json();
+    const {signature, expire, token} = data;
+    return {signature, expire, token};
+  } catch (error) {
+    throw new Error(`Authentication request failed: ${error.message}`);
+  }
 }
+
+module.exports.uploadFile = async file => {
+  const securityParameters = await fetchSecurityCredentails();
+  return await imagekit.upload({
+    file,
+    fileName: file.name, //you can change this and generate your own name if required
+    tags: ['sample-tag-1', 'sample-tag-2'], //change this or remove it if you want
+    token: securityParameters.token,
+    signature: securityParameters.signature,
+    expire: securityParameters.expire,
+  });
+};
 ```
 {% endcode %}
 
@@ -428,65 +446,82 @@ This is how we implement file upload in `app/screens/Upload/index.js`
 
 {% code title="app/screens/Upload/index.js" %}
 ```javascript
-import React, { useState } from 'react';
-import { View } from 'react-native';
+import React, {useState} from 'react';
+import {View, ActivityIndicator} from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
 
-import Button from '../../components/Button/';
-import Text from '../../components/Text/';
+import Button from '../../components/Button';
+import Text from '../../components/Text';
 import getStyleSheet from './styles';
 
-import { uploadFile } from '../../lib/imagekit';
+import {uploadFile} from '../../lib/imagekit';
+import Toast from 'react-native-toast-message';
 
 function Upload() {
-	let styleSheet = getStyleSheet({});
+  let styleSheet = getStyleSheet({});
+  const [uploadFileUrl, setUploadFileUrl] = useState('');
+  const [uploading, setUploading] = useState(false); // State for tracking the uploading process
 
-	const [uploadFileUrl, setUploadFileUrl] = useState();
+  async function openFileSelector() {
+    try {
+      setUploadFileUrl('');
+      var res = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.allFiles],
+      });
 
-	async function openFileSelector(){
-		try{
-			var res = await DocumentPicker.pick({
-				type: [DocumentPicker.types.allFiles],
-			});
-			
-			uploadFileToImagekit(res);
-		}catch(err){
-			if (DocumentPicker.isCancel(err)) {
-				// User cancelled the picker, exit any dialogs or menus and move on
-			} else {
-				throw err;
-			}
-		}
-	}
+      setUploading(true); // Show loader while uploading
 
-	async function uploadFileToImagekit(fileData){
-		try{
-			const uploadedFile = await uploadFile(fileData);
-			setUploadFileUrl(uploadedFile.url);
-		}catch(err){
-			//handle error in uploading file
-		}
-	}
+      await uploadFileToImagekit(res);
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        // User cancelled the picker, exit any dialogs or menus and move on
+        Toast.show({
+          type: 'info',
+          text1: 'Upload cancelled.',
+          position: 'bottom',
+        });
+      } else {
+        throw err;
+      }
+    } finally {
+      setUploading(false); // Hide loader after the upload is complete
+    }
+  }
 
-	return (
-		<>
-			<View style={styleSheet.container}>
-				<Button 
-					cssProps={styleSheet.buttonCssProps} 
-					onPress={() => openFileSelector()}
-				>
-					Upload File
-				</Button>
-				<View style={styleSheet.captionView}>
-					{
-						uploadFileUrl && 
-						<Text>Uploaded File - {uploadFileUrl}</Text>
-					}
-				</View>
-			</View>
-		</>
-	);
-};
+  async function uploadFileToImagekit(fileData) {
+    try {
+      const uploadedFile = await uploadFile(fileData);
+      Toast.show({
+        type: 'success',
+        text1: 'Image uploaded.',
+        position: 'bottom',
+      });
+      setUploadFileUrl(uploadedFile.url);
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: err.message,
+        position: 'bottom',
+      });
+    }
+  }
+  return (
+    <View style={styleSheet.container}>
+      <Button
+        cssProps={styleSheet.buttonCssProps}
+        onPress={() => openFileSelector()}>
+        Upload File
+      </Button>
+      <View style={styleSheet.captionView}>
+        {uploading ? (
+          <ActivityIndicator size="large" color="#219dad" />
+        ) : (
+          uploadFileUrl && <Text>Uploaded File - {uploadFileUrl}</Text>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default Upload;
 ```
